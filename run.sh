@@ -12,6 +12,19 @@ touch "$CLAUDE_JSON"
 
 DOCKER_FLAGS=("--rm")
 
+# Container name: claude-<normalized_relative_path>-m.d.H.M
+# Strip $HOME prefix (static across all sessions), normalize remaining path.
+_raw="${HOST_CWD#"$HOME/"}"         # strip $HOME/ prefix if present
+_raw="${_raw#/}"                    # strip any remaining leading /
+_raw="${_raw//\//_}"                # / → _
+_raw="${_raw//[^a-zA-Z0-9_]/}"      # remove everything else (hyphens, dots, etc.)
+[[ ${#_raw} -gt 40 ]] && _raw="${_raw: -40}"  # keep rightmost 40 chars if too long
+_raw="${_raw#_}"                    # drop leading _ from truncation
+[[ -z "$_raw" ]] && _raw="$(basename "$HOST_CWD")"  # fallback for root or edge cases
+_ts="$(date '+%m.%d.%H.%M')"
+CONTAINER_NAME="claude-${_raw}-${_ts}"
+DOCKER_FLAGS+=("--name" "$CONTAINER_NAME")
+
 # Only attach a TTY when stdin and stdout are both terminals.
 if [ -t 0 ] && [ -t 1 ]; then
     DOCKER_FLAGS+=("-it")
