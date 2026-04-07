@@ -14,6 +14,9 @@ CLIPBOARD_SERVER="${SCRIPT_DIR}/clipboard-server.py"
 CLIPBOARD_DEBUG="${CLIPBOARD_DEBUG:-}"
 CLIPBOARD_LOG="${CLAUDE_CONFIG_DIR}/clipboard-server.log"
 
+# Derive timezone from the host symlink, e.g. /var/db/timezone/zoneinfo/Europe/Istanbul.
+_tz="$(readlink /etc/localtime 2>/dev/null | sed 's|.*/zoneinfo/||')"
+
 # Ensure host-side paths exist before mounting.
 mkdir -p "$CLAUDE_CONFIG_DIR" "$HOME/.cache"
 touch "$CLAUDE_JSON"
@@ -93,6 +96,7 @@ DOCKER_FLAGS+=(
     "-e" "CLIPBOARD_HOST=${CLIPBOARD_HOST}"
     "-e" "CLIPBOARD_PORT=${CLIPBOARD_PORT}"
     "-e" "CLIPBOARD_DEBUG=${CLIPBOARD_DEBUG}"
+    ${_tz:+"-e" "TZ=${_tz}"}
 
     # Mount CWD at the same absolute path so all file references stay valid.
     "-v" "${HOST_CWD}:${HOST_CWD}:z"
