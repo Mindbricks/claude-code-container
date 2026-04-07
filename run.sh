@@ -55,9 +55,7 @@ if [[ -f "$CLIPBOARD_SERVER" ]] && command -v python3 &>/dev/null; then
         done
     fi
 
-    if _clipboard_server_alive; then
-        echo "[clipboard] server alive on port ${CLIPBOARD_PORT}" >> "$CLIPBOARD_LOG"
-    else
+    if ! _clipboard_server_alive; then
         echo "[clipboard] server failed to start — image paste unavailable" >> "$CLIPBOARD_LOG"
         echo "clipboard-server: could not start, image paste will be unavailable" >&2
     fi
