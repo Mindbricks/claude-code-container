@@ -4,10 +4,23 @@ A minimalist solution to run [Claude Code](https://github.com/anthropics/claude-
 
 - Supports **multiple simultaneous sessions** on the same project.
 - **Telemetry is disabled** (via `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`).
+- **Clipboard image paste** works inside the container (macOS only) — use Ctrl+V to paste screenshots, images copied from a browser, or image files copied from Finder.
 
 ## Requirements
 
 - Docker or Podman
+
+**For clipboard image paste:**
+
+- macOS (the clipboard bridge relies on macOS-specific APIs)
+- Python 3 (pre-installed on macOS; used to run the clipboard bridge server)
+- [`pngpaste`](https://github.com/jcsalterego/pngpaste) _(recommended)_ — improves clipboard compatibility:
+
+    ```bash
+    brew install pngpaste
+    ```
+
+    Without it, the bridge falls back to AppleScript, which works but may be slower.
 
 ## Setup
 
@@ -68,12 +81,48 @@ claude --name "Add necessary tests"
 
 ## Configuration
 
-|  Environment variable |       Default        |               Description               |
-|-----------------------|----------------------|-----------------------------------------|
-| `CLAUDE_DOCKER_IMAGE` | `claude-code:latest` | Image name to use                       |
-| `CLAUDE_CONFIG_DIR`   | `~/.claude`          | Path to Claude config/state dir on host |
-| `INSTALL_DIR`         | `~/.local/bin`       | Where `install.sh` places the symlink   |
-| `INSTALL_AS`          | `claude`             | Command name created by `install.sh`    |
+|  Environment variable |        Default         |                             Description                             |
+|-----------------------|------------------------|---------------------------------------------------------------------|
+| `CLAUDE_DOCKER_IMAGE` | `claude-code:latest`   | Image name to use                                                   |
+| `CLAUDE_CONFIG_DIR`   | `~/.claude`            | Path to Claude config/state dir on host                             |
+| `INSTALL_DIR`         | `~/.local/bin`         | Where `install.sh` places the symlink                               |
+| `INSTALL_AS`          | `claude`               | Command name created by `install.sh`                                |
+| `CLIPBOARD_HOST`      | `host.docker.internal` | Hostname used by the container to reach the clipboard bridge server |
+| `CLIPBOARD_PORT`      | `18256`                | TCP port used by the clipboard bridge server                        |
+| `CLIPBOARD_DEBUG`     | _(unset)_              | Set to any value to enable clipboard debug logging                  |
+
+## Pasting Images
+
+Claude Code's Ctrl+V image paste is bridged to the macOS clipboard automatically. A lightweight Python server starts in the background on the host and exposes clipboard image data over TCP; shim scripts inside the container intercept `xclip`/`wl-paste` calls and forward them to it.
+
+**Supported sources:**
+
+- Screenshots (Cmd+Shift+3 / Cmd+Shift+4 / etc.)
+- Images copied from a browser or any app
+- Image files copied from Finder (PNG, JPG, GIF, WebP, TIFF)
+
+**Not supported:** non-image files — pasting a `.txt`, etc. does nothing. For PDFs, use Claude Code's `@`-mention syntax instead: type `@/path/to/file.pdf` to bring a PDF into context.
+
+See [Requirements](#requirements) for host-side dependencies.
+
+## Development
+
+To enable verbose logging for the clipboard bridge, set `CLIPBOARD_DEBUG`:
+
+```bash
+CLIPBOARD_DEBUG=1 claude
+```
+
+Logs are written to:
+
+- `~/.claude/clipboard-server.log` — host-side server
+- `~/.claude/clipboard-client.log` — container-side shim
+
+When modifying `clipboard-server.py`, the already-running server process won't pick up your changes automatically. Kill it so the next `claude` invocation starts a fresh instance:
+
+```bash
+pkill -f clipboard-server.py 2>/dev/null && echo "killed" || echo "not running"
+```
 
 ## Design decisions
 
