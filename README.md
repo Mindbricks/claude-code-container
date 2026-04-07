@@ -65,7 +65,7 @@ claude "explain this codebase"
 claude --name "Add necessary tests"
 ```
 
-## What gets mounted
+## What Gets Mounted
 
 |          Path         |    Mode    |               Notes               |
 |-----------------------|------------|-----------------------------------|
@@ -124,7 +124,7 @@ When modifying `clipboard-server.py`, the already-running server process won't p
 pkill -f clipboard-server.py 2>/dev/null && echo "killed" || echo "not running"
 ```
 
-## Design decisions
+## Design Decisions
 
 - **Single image** — one image is built once and reused for every project, keeping disk usage low.
 - **Same-path mounts** — the project directory and home paths are mounted at their exact host paths inside the container. This keeps file references, git context, and symlinks valid without any translation.
