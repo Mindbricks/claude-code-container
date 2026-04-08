@@ -5,6 +5,18 @@ _script="${BASH_SOURCE[0]}"
 [[ -L "$_script" ]] && _script="$(readlink "$_script")"
 SCRIPT_DIR="$(cd "$(dirname "$_script")" && pwd)"
 IMAGE="${CLAUDE_DOCKER_IMAGE:-claude-code:latest}"
+
+# If the user runs `--update`, we run `claude --update` in a temp container, then
+# commit the result back into the image. Setting ENTRYPOINT resets CMD, so prevents
+# the automatic overriding of it to "--update".
+if [[ "${1:-}" == "--update" ]]; then
+    _ctr="claude-update-$$"
+    trap 'docker rm -f "$_ctr" &>/dev/null || true' EXIT
+    docker run --name "$_ctr" -t "$IMAGE" --update
+    docker commit --change 'ENTRYPOINT ["claude"]' "$_ctr" "$IMAGE" &>/dev/null
+    exit 0
+fi
+
 HOST_CWD="$(pwd -P)"
 CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CLAUDE_JSON="${HOME}/.claude.json"

@@ -63,6 +63,9 @@ claude "explain this codebase"
 
 # Start a named session (useful when returning back to it later via --resume):
 claude --name "Add necessary tests"
+
+# Update Claude Code to the latest version (doesn't interrupt ongoing sessions):
+claude --update
 ```
 
 ## What Gets Mounted
