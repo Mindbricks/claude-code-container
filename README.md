@@ -6,6 +6,14 @@ A minimalist solution to run [Claude Code](https://github.com/anthropics/claude-
 - **Telemetry is disabled** (via `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`).
 - **Clipboard image paste** works inside the container (macOS only) — use Ctrl+V to paste screenshots, images copied from a browser, or image files copied from Finder.
 
+## Design Decisions
+
+- **Single image** — one image is built once and reused for every project, keeping disk usage low.
+- **Same-path mounts** — the project directory and home paths are mounted at their exact host paths inside the container. This keeps file references, git context, and symlinks valid without any translation.
+- **Throwaway containers** — each invocation starts a fresh container (`--rm`). No state is left behind between sessions beyond what is explicitly mounted.
+- **Selective mounts** — only the minimum set of host paths needed for Claude Code to function are exposed. Optional paths (git config, SSH keys, etc.) are mounted read-only and only if they exist.
+- **No Node.js on the host** — Claude Code and its dependencies live entirely inside the image.
+
 ## Requirements
 
 - Docker or Podman
@@ -126,11 +134,3 @@ When modifying `clipboard-server.py`, the already-running server process won't p
 ```bash
 pkill -f clipboard-server.py 2>/dev/null && echo "killed" || echo "not running"
 ```
-
-## Design Decisions
-
-- **Single image** — one image is built once and reused for every project, keeping disk usage low.
-- **Same-path mounts** — the project directory and home paths are mounted at their exact host paths inside the container. This keeps file references, git context, and symlinks valid without any translation.
-- **Throwaway containers** — each invocation starts a fresh container (`--rm`). No state is left behind between sessions beyond what is explicitly mounted.
-- **Selective mounts** — only the minimum set of host paths needed for Claude Code to function are exposed. Optional paths (git config, SSH keys, etc.) are mounted read-only and only if they exist.
-- **No Node.js on the host** — Claude Code and its dependencies live entirely inside the image.
