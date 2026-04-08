@@ -14,10 +14,16 @@ if [ -n "${CLAUDE_VERSION:-}" ]; then
     BUILD_ARGS+=("--build-arg" "CLAUDE_VERSION=${CLAUDE_VERSION}")
 fi
 
+_old_id=$(docker inspect --format='{{.Id}}' "$FULL_IMAGE" 2>/dev/null || true)
+
 docker build \
     --tag "$FULL_IMAGE" \
     "${BUILD_ARGS[@]}" \
     "$SCRIPT_DIR"
+
+if [[ -n "$_old_id" ]] && [[ -z "$(docker ps -q --filter ancestor="$_old_id")" ]]; then
+    docker rmi "$_old_id" &>/dev/null || true
+fi
 
 echo ""
 echo "Build complete: ${FULL_IMAGE}"
