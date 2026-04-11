@@ -133,4 +133,25 @@ do
     fi
 done
 
+# ── User config (~/.config/claude-code-container/config.ini) ─────────────────
+_config="${XDG_CONFIG_HOME:-$HOME/.config}/claude-code-container/config.ini"
+if [[ -f "$_config" ]]; then
+    _section=""
+    while IFS= read -r _line || [[ -n "$_line" ]]; do
+        _line="${_line%%#*}"                         # strip inline comments
+        _line="${_line#"${_line%%[^[:space:]]*}"}"   # ltrim
+        _line="${_line%"${_line##*[^[:space:]]}"}"   # rtrim
+        [[ -z "$_line" ]] && continue
+        if [[ "$_line" == \[*\] ]]; then
+            _section="${_line:1:-1}"
+            continue
+        fi
+        case "$_section" in
+            mounts) DOCKER_FLAGS+=("-v" "$_line") ;;
+            env)    DOCKER_FLAGS+=("-e" "$_line") ;;
+        esac
+    done < "$_config"
+fi
+# ─────────────────────────────────────────────────────────────────────────────
+
 docker run "${DOCKER_FLAGS[@]}" "$IMAGE" "$@"

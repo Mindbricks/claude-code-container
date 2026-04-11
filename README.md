@@ -92,6 +92,30 @@ claude --update
 
 ## Configuration
 
+### Config File
+
+User-specific settings live in `~/.config/claude-code-container/config.ini` (respects `$XDG_CONFIG_HOME`). The file uses simple INI-style sections.
+
+**`[mounts]`** — extra paths to mount into the container, one per line in `src:dst[:options]` format:
+
+```ini
+[mounts]
+# Shared notes directory (read/write)
+/home/myuser/notes:/home/myuser/notes
+
+# Read-only reference data
+/home/myuser/datasets:/data:ro
+```
+
+**`[env]`** — extra environment variables to pass to the container, one `KEY=value` per line:
+
+```ini
+[env]
+SOME_ENV_VAR=value
+```
+
+### Environment Variables
+
 |  Environment variable |        Default         |                             Description                             |
 |-----------------------|------------------------|---------------------------------------------------------------------|
 | `CLAUDE_DOCKER_IMAGE` | `claude-code:latest`   | Image name to use                                                   |
