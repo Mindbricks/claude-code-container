@@ -17,6 +17,13 @@ if [[ "${1:-}" == "--update" ]]; then
     exit 0
 fi
 
+PROFILE=""
+if [[ "${1:-}" == "--profile" ]]; then
+    [[ -z "${2:-}" ]] && { echo "usage: claude --profile <name> [args...]" >&2; exit 1; }
+    [[ "$2" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "profile name must be alphanumeric (with - or _)" >&2; exit 1; }
+    PROFILE="$2"; shift 2
+fi
+
 HOST_CWD="$(pwd -P)"
 CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CLAUDE_JSON="${HOME}/.claude.json"
@@ -114,7 +121,6 @@ DOCKER_FLAGS+=(
 
     # Claude config and state (clipboard logs also land here).
     "-v" "${CLAUDE_CONFIG_DIR}:${CLAUDE_CONFIG_DIR}:z"
-    "-v" "${CLAUDE_JSON}:${CLAUDE_JSON}:z"
 
     # Cache (shared across sessions for performance).
     "-v" "${HOME}/.cache:${HOME}/.cache:z"
@@ -151,6 +157,29 @@ if [[ -f "$_config" ]]; then
             env)    DOCKER_FLAGS+=("-e" "$_line") ;;
         esac
     done < "$_config"
+fi
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Profile overlay ───────────────────────────────────────────────────────────
+if [[ -n "$PROFILE" ]]; then
+    _cred_file="${CLAUDE_CONFIG_DIR}/.credentials.${PROFILE}.json"
+    _json_file="${HOME}/.claude.${PROFILE}.json"
+    [[ -f "$_cred_file" ]] || echo '{}' > "$_cred_file"
+    if [[ ! -f "$_json_file" ]]; then
+        if command -v jq &>/dev/null; then
+            jq 'del(.userID, .oauthAccount, .primaryApiKey, .customApiKeyResponses, .claudeAiMcpEverConnected)' \
+                "$CLAUDE_JSON" > "$_json_file"
+        else
+            cp "$CLAUDE_JSON" "$_json_file"
+            echo "warning: jq not found — profile settings copied with account keys intact" >&2
+        fi
+    fi
+    DOCKER_FLAGS+=(
+        "-v" "${_cred_file}:${CLAUDE_CONFIG_DIR}/.credentials.json:z"
+        "-v" "${_json_file}:${CLAUDE_JSON}:z"
+    )
+else
+    DOCKER_FLAGS+=("-v" "${CLAUDE_JSON}:${CLAUDE_JSON}:z")
 fi
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -76,13 +76,40 @@ claude --name "Add necessary tests"
 claude --update
 ```
 
+### Profiles
+
+Use `--profile <name>` to maintain separate login credentials (e.g., for different Anthropic accounts):
+
+```bash
+# Work account
+claude --profile work
+
+# Personal account
+claude --profile personal "explain this code"
+
+# Default (no profile) — uses ~/.claude/.credentials.json normally
+claude
+```
+
+Each profile stores its own credentials (`~/.claude/.credentials.<name>.json`) and settings (`~/.claude.<name>.json`), overlay-mounted on top of the originals inside the container. On first use, settings are copied from `~/.claude.json` (with account-specific keys stripped; requires `jq`); credentials start empty so Claude Code will prompt you to log in.
+
+```bash
+# List profiles
+ls ~/.claude/.credentials.*.json
+
+# Remove a profile
+rm ~/.claude/.credentials.<name>.json ~/.claude.<name>.json
+```
+
 ## What Gets Mounted
 
 |          Path         |    Mode    |               Notes               |
 |-----------------------|------------|-----------------------------------|
 | Current directory     | read/write | Mounted at the same absolute path |
 | `~/.claude/`          | read/write | Claude state and auth             |
+| `~/.claude/.credentials.<profile>.json` | read/write | Only with `--profile`; overlays `.credentials.json` |
 | `~/.claude.json`      | read/write | Claude settings                   |
+| `~/.claude.<profile>.json` | read/write | Only with `--profile`; overlays `~/.claude.json` |
 | `~/.cache/`           | read/write | Shared cache across sessions      |
 | `~/.gitconfig`        | read-only  | If it exists                      |
 | `~/.gitignore.global` | read-only  | If it exists                      |
